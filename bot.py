@@ -18,6 +18,14 @@ class Payment:
         self.payment_type = payment_type
         self.payment_detail = ''
         self.payment_sum = 0.0
+        
+user_card = {}
+
+class Card:
+    def __init__(self, amount, currency):
+        self.amount = amount
+        self.currency = currency
+
 
 @bot.message_handler(commands=['start'])
 def start_handler(message):
@@ -75,19 +83,27 @@ def text_handler(message):
         bot.register_next_step_handler(msg_out, ask_phone_number)
 
 def ask_sum(message):
-    amount = message.text
-    if not amount.isdigit():
-        msg = 'Сумма должна быть целым числом!'
+    Card.amount = message.text
+    if not Card.amount.isdigit():
+        msg = 'Цифрами, пожалуйста!'
         msg_out = bot.send_message(message.chat.id, msg)
         bot.register_next_step_handler(msg_out, ask_sum)
         return
-    amount = message.text
+    Card.amount = message.text
+    ask_currency(message)
+
+def ask_currency(message):
     menu.currency_menu(bot, message.chat.id)
-    if message.text == 'BY' or message.text == 'USD' or message.text == 'EUR' or message.text == 'RUB':
-          currency = message.text
-          new_card = card.new_card(message.chat.id, amount, currency)
-          msg = f"Карта успешно создана \nНомер карты: {new_card['card_num']}"
-          msg_out = bot.send_message(message.chat.id, msg)    
+    Card.currency = message.text
+    if message.text != 'BY' or message.text != 'USD' or message.text != 'EUR' or message.text != 'RUB':
+        msg = 'Выберите валюту из предложенных ниже!'
+        msg_out = bot.send_message(message.chat.id, msg)
+        bot.register_next_step_handler(msg_out, ask_currency)
+        return
+    Card.currency = message.text
+    new_card = card.new_card(message.chat.id, Card.amount, Card.currency)
+    msg = f"Карта успешно создана \nНомер карты: {new_card['card_num']}"
+    msg_out = bot.send_message(message.chat.id, msg)    
 
 def ask_phone_number(message):
     phone_number = message.text

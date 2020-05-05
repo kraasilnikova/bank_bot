@@ -1,0 +1,6 @@
+config.py
+id_rsa.*
+id_rsa
+.spyproject/
+__pycache__/
+storage/
