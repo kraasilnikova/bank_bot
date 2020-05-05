@@ -4,8 +4,12 @@ import random
 import os.path
 import json
 
-def new_card(telegram_id, amount, currency):
-    card_num = ' '.join([str(i) for i in [random.randint(1000, 9999) for i in range(4)]])
+def new_card_num():
+    return ' '.join([str(i) for i in [random.randint(1000, 9999) for i in range(4)]])
+
+def new_card(telegram_id, amount, currency, card_num=''):
+    if not card_num:
+        card_num = ' '.join([str(i) for i in [random.randint(1000, 9999) for i in range(4)]])
     
     card = {f'{card_num}': {'currency': currency,
                             'amount': amount

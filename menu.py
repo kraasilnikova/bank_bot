@@ -34,6 +34,6 @@ def currency_menu (bot, chat_id):
     main_menu_button = types.KeyboardButton('Главное меню')
 
     payment_menu_buttons.add(by_payment, usd_payment, eur_payment, rub_payment, main_menu_button)
-    bot.send_message(chat_id, 'Выберите валюту', reply_markup=payment_menu_buttons)
+    return bot.send_message(chat_id, 'Выберите валюту', reply_markup=payment_menu_buttons)
    
     

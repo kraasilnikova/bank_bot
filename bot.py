@@ -22,9 +22,11 @@ class Payment:
 user_card = {}
 
 class Card:
-    def __init__(self, amount, currency):
+    def __init__(self, telegram_id, card_num, amount=0.0, currency='BY'):
+        self.telegram_id = telegram_id
         self.amount = amount
         self.currency = currency
+        self.card_num = card_num
 
 
 @bot.message_handler(commands=['start'])
@@ -38,6 +40,13 @@ def start_handler(message):
 def text_handler(message):
     
     if message.text == 'Новая карта':
+        # рассчитать номер для новой карты
+        card_num = card.new_card_num()
+        # создать новый объек карточки и добавить его в общий список
+        telegram_id = message.chat.id
+        new_card = Card(telegram_id, card_num)
+        user_card[telegram_id] = new_card
+
         msg = 'Введите сумму'
         msg_out = bot.send_message(message.chat.id, msg)
         bot.register_next_step_handler(msg_out, ask_sum)
@@ -83,26 +92,29 @@ def text_handler(message):
         bot.register_next_step_handler(msg_out, ask_phone_number)
 
 def ask_sum(message):
-    Card.amount = message.text
-    if not Card.amount.isdigit():
-        msg = 'Цифрами, пожалуйста!'
+    card_amount = message.text
+    if not card_amount.isdigit():
+        msg = 'Цифрами, пожалуйста! и целым числом'
         msg_out = bot.send_message(message.chat.id, msg)
         bot.register_next_step_handler(msg_out, ask_sum)
         return
-    Card.amount = message.text
-    ask_currency(message)
+    user_card[message.chat.id].amount = int(message.text)
+
+    msg_out = menu.currency_menu(bot, message.chat.id)
+    bot.register_next_step_handler(msg_out, ask_currency)
 
 def ask_currency(message):
-    menu.currency_menu(bot, message.chat.id)
-    Card.currency = message.text
-    if message.text != 'BY' or message.text != 'USD' or message.text != 'EUR' or message.text != 'RUB':
+
+    if not message.text in ('BY', 'USD', 'EUR', 'RUB'):
         msg = 'Выберите валюту из предложенных ниже!'
         msg_out = bot.send_message(message.chat.id, msg)
         bot.register_next_step_handler(msg_out, ask_currency)
         return
-    Card.currency = message.text
-    new_card = card.new_card(message.chat.id, Card.amount, Card.currency)
-    msg = f"Карта успешно создана \nНомер карты: {new_card['card_num']}"
+
+    user_card[message.chat.id].currency = message.text
+
+    new_card = card.new_card(message.chat.id, user_card[message.chat.id].amount, user_card[message.chat.id].currency, user_card[message.chat.id].card_num)
+    msg = f"Карта успешно создана \nНомер карты: {new_card['card_num']}\nСумма: {new_card['amount']} {new_card['currency']}"
     msg_out = bot.send_message(message.chat.id, msg)    
 
 def ask_phone_number(message):
