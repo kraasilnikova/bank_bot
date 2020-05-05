@@ -65,11 +65,7 @@ def text_handler(message):
         msg_out = bot.send_message(message.chat.id, msg)
         
     elif message.text == 'Мои карты':
-        cards = card.get_cards(message.chat.id)
-        msg = ''
-        for item in cards.items():
-            msg += f"{item[0]} \nОстаток: {item[1]['amount']} {item[1]['currency']} \n\n"
-        msg_out = bot.send_message(message.chat.id, msg)
+        card.get_cards(bot, message.chat.id)
 
     elif message.text == 'Платежи':
         menu.payment_menu(bot, message.chat.id)

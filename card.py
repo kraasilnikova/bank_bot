@@ -36,15 +36,20 @@ def new_card(telegram_id, amount, currency, card_num=''):
               }
     return result
     
-def get_cards(telegram_id):
+def get_cards(bot, telegram_id):
     file_client = f'.\\storage\\{telegram_id}.json'
     if os.path.exists(file_client):
         with open(file_client, 'r') as file:
             client = json.load(file)
 
-        return client['cards']
+        cards = client['cards']
+        msg = ''
+        for item in cards.items():
+            msg += f"{item[0]} \nОстаток: {item[1]['amount']} {item[1]['currency']} \n\n"
     else:
-        return {'error' : 'У вас нет карт. Заведите новую.'}
+        msg = 'У вас нет карт. Заведите новую.'
+
+    bot.send_message(telegram_id, msg)
         
     
 
