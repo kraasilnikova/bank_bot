@@ -25,7 +25,7 @@ def payment_menu(bot, chat_id):
     bot.send_message(chat_id, 'Выберите платеж', reply_markup=payment_menu_buttons)
     
 def currency_menu (bot, chat_id):
-    payment_menu_buttons = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+    payment_menu_buttons = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
     
     by_payment = types.KeyboardButton('BY')
     usd_payment = types.KeyboardButton('USD')
