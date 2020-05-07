@@ -78,14 +78,18 @@ def text_handler(message):
             msg = 'Введите номер телефона'
         else: 
             msg = 'Введите номер лицевого счёта'
+        msg_out = bot.send_message(message.chat.id, msg)
         telegram_id = message.chat.id
         payment_type = message.text
 
         payment = Payment(telegram_id, payment_type)
         user_payment[telegram_id] = payment
+        bot.register_next_step_handler(msg_out, ask_card)
 
-        msg_out = bot.send_message(message.chat.id, msg)
-        bot.register_next_step_handler(msg_out, ask_phone_number)
+def ask_card(message):
+    menu.card_menu(bot, message.chat.id)
+    card.get_cards(bot, message.chat.id)
+
 
 def ask_sum(message):
     card_amount = message.text

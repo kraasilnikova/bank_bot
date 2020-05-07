@@ -41,7 +41,8 @@ def get_cards(bot, telegram_id):
     if os.path.exists(file_client):
         with open(file_client, 'r') as file:
             client = json.load(file)
-
+        msg = 'Ваши карты: '
+        bot.send_message(telegram_id, msg)
         cards = client['cards']
         msg = ''
         for item in cards.items():
