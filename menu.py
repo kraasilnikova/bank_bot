@@ -38,7 +38,7 @@ def currency_menu (bot, chat_id):
     return bot.send_message(chat_id, 'Выберите валюту', reply_markup=payment_menu_buttons)
 
 def card_menu(bot, telegram_id):
-    payment_menu_buttons = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+    payment_menu_buttons = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
 
     file_client = f'.\\storage\\{telegram_id}.json'
     with open(file_client, 'r') as file:
@@ -46,7 +46,7 @@ def card_menu(bot, telegram_id):
     cards = client['cards']
     for item in cards.items():
         payment_menu_buttons.add(item[0])
-
-    payment_menu_buttons.add()
+    main_menu_button = types.KeyboardButton('Главное меню')
+    payment_menu_buttons.add(main_menu_button)
     bot.send_message(telegram_id, 'Выберите номер катры, которой хотите оплатить', reply_markup=payment_menu_buttons)
 

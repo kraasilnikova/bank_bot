@@ -18,15 +18,17 @@ class Payment:
         self.payment_type = payment_type
         self.payment_detail = ''
         self.payment_sum = 0.0
+        self.phone_number = 0
         
 user_card = {}
 
 class Card:
-    def __init__(self, telegram_id, card_num, amount=0.0, currency='BY'):
+    def __init__(self, telegram_id, card_num, amount=0.0, currency='BY', number='0000'):
         self.telegram_id = telegram_id
         self.amount = amount
         self.currency = currency
         self.card_num = card_num
+        self.number = number
 
 
 @bot.message_handler(commands=['start'])
@@ -79,17 +81,7 @@ def text_handler(message):
         else: 
             msg = 'Введите номер лицевого счёта'
         msg_out = bot.send_message(message.chat.id, msg)
-        telegram_id = message.chat.id
-        payment_type = message.text
-
-        payment = Payment(telegram_id, payment_type)
-        user_payment[telegram_id] = payment
-        bot.register_next_step_handler(msg_out, ask_card)
-
-def ask_card(message):
-    menu.card_menu(bot, message.chat.id)
-    card.get_cards(bot, message.chat.id)
-
+        bot.register_next_step_handler(msg_out, ask_phone_number)
 
 def ask_sum(message):
     card_amount = message.text
@@ -99,50 +91,50 @@ def ask_sum(message):
         bot.register_next_step_handler(msg_out, ask_sum)
         return
     user_card[message.chat.id].amount = int(message.text)
-
     msg_out = menu.currency_menu(bot, message.chat.id)
     bot.register_next_step_handler(msg_out, ask_currency)
 
 def ask_currency(message):
-
     if not message.text in ('BY', 'USD', 'EUR', 'RUB'):
         msg = 'Выберите валюту из предложенных ниже!'
         msg_out = bot.send_message(message.chat.id, msg)
         bot.register_next_step_handler(msg_out, ask_currency)
         return
-
     user_card[message.chat.id].currency = message.text
-
     new_card = card.new_card(message.chat.id, user_card[message.chat.id].amount, user_card[message.chat.id].currency, user_card[message.chat.id].card_num)
     msg = f"Карта успешно создана \nНомер карты: {new_card['card_num']}\nСумма: {new_card['amount']} {new_card['currency']}"
-    msg_out = bot.send_message(message.chat.id, msg)    
+    msg_out = bot.send_message(message.chat.id, msg)
+
+
 
 def ask_phone_number(message):
-    phone_number = message.text
-    if not phone_number.isdigit():
+    user_payment.phone_number = message.text
+    if not user_payment.phone_number.isdigit():
         msg = 'Чувак, перепроверь введённые данные'
         msg_out = bot.send_message(message.chat.id, msg)
         bot.register_next_step_handler(msg_out, ask_phone_number)
         return
-
     telegram_id = message.chat.id
-    payment = user_payment[telegram_id]
-    payment.payment_detail = phone_number
-
     msg = 'Введите сумму'
     msg_out = bot.send_message(message.chat.id, msg)
     bot.register_next_step_handler(msg_out, ask_phone_sum)
 
 def ask_phone_sum(message):
-    phone_sum = message.text
-    if not phone_sum.isdigit():
+    user_payment.payment_sum = message.text
+    if not user_payment.payment_sum.isdigit():
         msg = 'Сумма должна быть целым числом!'
         msg_out = bot.send_message(message.chat.id, msg)
         bot.register_next_step_handler(msg_out, ask_phone_sum)
         return
+    ask_card(message)
+
+def ask_card(message):
+    menu.card_menu(bot, message.chat.id)
+    card.get_cards(bot, message.chat.id)
+    user_card.number = message.text
+    card.subtracting_from_card(bot, message.chat.id, user_card.number, user_payment.payment_sum)
     telegram_id = message.chat.id
     payment = user_payment[telegram_id]
-    payment.payment_sum = phone_sum
     a = time.strftime("%d-%m-%Y  %H:%M:%S", time.localtime())
     msg = f'Спасибо! \nПользователь {payment.telegram_id} оплатил за {payment.payment_type} {payment.payment_sum} руб. по номеру {payment.payment_detail}.\n{a}'
     msg_out = bot.send_message(message.chat.id, msg)
