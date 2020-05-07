@@ -135,6 +135,8 @@ def ask_card(message):
     card.subtracting_from_card(bot, message.chat.id, user_card.number, user_payment.payment_sum)
     telegram_id = message.chat.id
     payment = user_payment[telegram_id]
+
+
     a = time.strftime("%d-%m-%Y  %H:%M:%S", time.localtime())
     msg = f'Спасибо! \nПользователь {payment.telegram_id} оплатил за {payment.payment_type} {payment.payment_sum} руб. по номеру {payment.payment_detail}.\n{a}'
     msg_out = bot.send_message(message.chat.id, msg)
