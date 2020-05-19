@@ -6,6 +6,7 @@ import menu
 import card
 import json
 import time
+import os
 import requests as res
 
 bot = telebot.TeleBot(config.TOKEN)
@@ -30,48 +31,57 @@ class Card:
         self.card_num = card_num
         self.number = number
 
-
 @bot.message_handler(commands=['start'])
 def start_handler(message):
     msg = 'Привет!'
     msg_out = bot.send_message(message.chat.id, msg)
-    
     menu.main_menu(bot, message.chat.id)
     
 @bot.message_handler(content_types=['text'])
 def text_handler(message):
-    
+
     if message.text == 'Новая карта':
-        # рассчитать номер для новой карты
         card_num = card.new_card_num()
-        # создать новый объек карточки и добавить его в общий список
         telegram_id = message.chat.id
         new_card = Card(telegram_id, card_num)
         user_card[telegram_id] = new_card
-
         msg = 'Введите сумму'
         msg_out = bot.send_message(message.chat.id, msg)
         bot.register_next_step_handler(msg_out, ask_sum)
         
-    elif message.text == 'Курсы валют': 
-        response = res.get('https://belarusbank.by/api/kursExchange')
-        curs = json.loads(response.text)
-        usd = curs[0]
-        usd_in = usd['USD_in']
-        usd_out = usd['USD_out']
-        eur_in = usd['EUR_in']
-        eur_out = usd['EUR_out']
-        rub_in = usd['RUB_in']
-        rub_out = usd['RUB_out']
-        msg = 'Курсы валют на сегодня:\nПокупка / продажа \nДоллар - ' + usd_in + ' / ' + usd_out + '\nЕвро - '+ eur_in + ' / ' + eur_out + '\nРоссийский рубль - ' + rub_in + ' / ' + rub_out
-        msg_out = bot.send_message(message.chat.id, msg)
-        
+    elif message.text == 'Курсы валют':
+        try:
+            response = res.get('https://belarusbank.by/api/kursExchange')
+            curs = json.loads(response.text)
+            usd = curs[0]
+            usd_in = usd['USD_in']
+            usd_out = usd['USD_out']
+            eur_in = usd['EUR_in']
+            eur_out = usd['EUR_out']
+            rub_in = usd['RUB_in']
+            rub_out = usd['RUB_out']
+            msg = 'Курсы валют на сегодня:\nПокупка / продажа \nДоллар - ' + usd_in + ' / ' + usd_out + '\nЕвро - '+ eur_in + ' / ' + eur_out + '\nРоссийский рубль - ' + rub_in + ' / ' + rub_out
+            msg_out = bot.send_message(message.chat.id, msg)
+        except Exception:
+            msg = 'Извините! Возникли проблемы с сайтом. Обратитесь позже.'
+            bot.send_message(message.chat.id, msg)
+
     elif message.text == 'Мои карты':
         card.get_cards(bot, message.chat.id)
 
     elif message.text == 'Платежи':
-        menu.payment_menu(bot, message.chat.id)
-        
+        try:
+            if not os.path.exists(f'.\\storage\\{message.chat.id}.json') or os.stat(
+                    f'.\\storage\\{message.chat.id}.json').st_size == 0:
+                msg = 'У Вас нет созданных карт, которыми можно было бы оплатить операцию. Создайте новую.'
+                msg_out = bot.send_message(message.chat.id, msg)
+                menu.main_menu(bot, message.chat.id)
+            else:
+                menu.payment_menu(bot, message.chat.id)
+        except Exception:
+            msg = 'Извините! Что-то пошло не так. Обратитесь позже.'
+            bot.send_message(message.chat.id, msg)
+
     elif message.text == 'Главное меню':
         menu.main_menu(bot, message.chat.id)
 
@@ -80,13 +90,15 @@ def text_handler(message):
             msg = 'Введите номер телефона'
         else: 
             msg = 'Введите номер лицевого счёта'
+        new_payment = Payment(message.chat.id, message.text)
+        user_payment[message.chat.id] = new_payment
         msg_out = bot.send_message(message.chat.id, msg)
         bot.register_next_step_handler(msg_out, ask_phone_number)
 
 def ask_sum(message):
     card_amount = message.text
     if not card_amount.isdigit():
-        msg = 'Цифрами, пожалуйста! и целым числом'
+        msg = 'Цифрами и целым числом, пожалуйста :)'
         msg_out = bot.send_message(message.chat.id, msg)
         bot.register_next_step_handler(msg_out, ask_sum)
         return
@@ -101,46 +113,70 @@ def ask_currency(message):
         bot.register_next_step_handler(msg_out, ask_currency)
         return
     user_card[message.chat.id].currency = message.text
-    new_card = card.new_card(message.chat.id, user_card[message.chat.id].amount, user_card[message.chat.id].currency, user_card[message.chat.id].card_num)
+    new_card = card.new_card(bot, message.chat.id, user_card[message.chat.id].amount, user_card[message.chat.id].currency, user_card[message.chat.id].card_num)
     msg = f"Карта успешно создана \nНомер карты: {new_card['card_num']}\nСумма: {new_card['amount']} {new_card['currency']}"
     msg_out = bot.send_message(message.chat.id, msg)
-
-
+    menu.main_menu(bot, message.chat.id)
 
 def ask_phone_number(message):
-    user_payment.phone_number = message.text
-    if not user_payment.phone_number.isdigit():
+    telegram_id = message.chat.id
+    if not message.text.isdigit():
         msg = 'Чувак, перепроверь введённые данные'
         msg_out = bot.send_message(message.chat.id, msg)
         bot.register_next_step_handler(msg_out, ask_phone_number)
         return
-    telegram_id = message.chat.id
+    user_payment[telegram_id].phone_number = message.text
     msg = 'Введите сумму'
     msg_out = bot.send_message(message.chat.id, msg)
     bot.register_next_step_handler(msg_out, ask_phone_sum)
 
 def ask_phone_sum(message):
-    user_payment.payment_sum = message.text
-    if not user_payment.payment_sum.isdigit():
+    if not message.text.isdigit():
         msg = 'Сумма должна быть целым числом!'
         msg_out = bot.send_message(message.chat.id, msg)
         bot.register_next_step_handler(msg_out, ask_phone_sum)
         return
-    ask_card(message)
+    user_payment[message.chat.id].payment_sum = message.text
+    count = 0
+    file_client = f'.\\storage\\{message.chat.id}.json'
+    with open(file_client) as file:
+        client = json.load(file)
+        cards = client['cards']
+        for item in cards.items():
+            if int(item[1]['amount']) >= int(message.text):
+                count = 1
+        if count == 0:
+            msg = 'Извините! У Вас недостаточно средств на карте/картах. Создайте новую карту.'
+            msg_out = bot.send_message(message.chat.id, msg)
+            menu.main_menu(bot, message.chat.id)
+        else:
+            msg_out = menu.card_menu(bot, message.chat.id, int(message.text))
+            bot.register_next_step_handler(msg_out, ask_card)
 
 def ask_card(message):
-    menu.card_menu(bot, message.chat.id)
-    card.get_cards(bot, message.chat.id)
-    user_card.number = message.text
-    card.subtracting_from_card(bot, message.chat.id, user_card.number, user_payment.payment_sum)
+    flag = True
+    count = 0
     telegram_id = message.chat.id
     payment = user_payment[telegram_id]
+    card_num = message.text[: message.text.find(':')]
+    payment.card_number = card_num
+    file_client = f'.\\storage\\{telegram_id}.json'
+    with open(file_client) as file:
+        client = json.load(file)
+        cards = client['cards']
+        for item in cards.items():
+            if card_num == item[0]:
+                flag = False
+                card.subtracting_from_card(bot, message.chat.id, payment.card_number, payment.payment_sum)
+                a = time.strftime("%H:%M:%S %d-%m-%Y", time.localtime())
+                msg = f'Спасибо! \nВы заплатили за {payment.payment_type} {payment.payment_sum} руб. по номеру {payment.phone_number} в {a}.'
+                msg_out = bot.send_message(message.chat.id, msg)
+                menu.main_menu(bot, message.chat.id)
+                break
+        if flag == True:
+            msg = 'Внимательнее! Выберите номер карты, из перечисленных ниже'
+            msg_out = bot.send_message(message.chat.id, msg)
+            bot.register_next_step_handler(msg_out, ask_card)
 
-
-    a = time.strftime("%d-%m-%Y  %H:%M:%S", time.localtime())
-    msg = f'Спасибо! \nПользователь {payment.telegram_id} оплатил за {payment.payment_type} {payment.payment_sum} руб. по номеру {payment.payment_detail}.\n{a}'
-    msg_out = bot.send_message(message.chat.id, msg)
-
-    
 bot.polling()
 
