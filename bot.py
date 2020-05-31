@@ -85,6 +85,10 @@ def text_handler(message):
     elif message.text == 'Главное меню':
         menu.main_menu(bot, message.chat.id)
 
+    elif message.text == 'История платежей':
+        telegram_id = message.chat.id
+        card.get_pay(bot, telegram_id)
+
     elif message.text == 'Мобильный телефон' or message.text == 'Домашний интернет':
         if message.text == 'Мобильный телефон':
             msg = 'Введите номер телефона'
@@ -169,6 +173,7 @@ def ask_card(message):
                 flag = False
                 card.subtracting_from_card(bot, message.chat.id, payment.card_number, payment.payment_sum)
                 a = time.strftime("%H:%M:%S %d-%m-%Y", time.localtime())
+                card.save(bot, telegram_id, card_num, payment.payment_sum, payment.payment_type, payment.phone_number, a)
                 msg = f'Спасибо! \nВы заплатили за {payment.payment_type} {payment.payment_sum} руб. по номеру {payment.phone_number} в {a}.'
                 msg_out = bot.send_message(message.chat.id, msg)
                 menu.main_menu(bot, message.chat.id)

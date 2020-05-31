@@ -4,14 +4,15 @@ from telebot import types
 import json
 
 def main_menu(bot, chat_id):
-    main_menu_buttons = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+    main_menu_buttons = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
     
     currency_button = types.KeyboardButton('Курсы валют')
     payments_button = types.KeyboardButton('Платежи')
     my_cards_button = types.KeyboardButton('Мои карты')
-    new_card_button = types.KeyboardButton('Новая карта')    
+    new_card_button = types.KeyboardButton('Новая карта')
+    my_payments_button = types.KeyboardButton('История платежей')
     
-    main_menu_buttons.add(currency_button, payments_button, my_cards_button, new_card_button)
+    main_menu_buttons.add(currency_button, payments_button, my_cards_button, new_card_button, my_payments_button)
     bot.send_message(chat_id, 'Выберите операцию', reply_markup=main_menu_buttons)
 
 

@@ -4,4 +4,5 @@ id_rsa
 .spyproject/
 __pycache__/
 storage/
+pay/
 .idea/
